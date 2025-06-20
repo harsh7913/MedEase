@@ -62,13 +62,13 @@ io.on("connection", (socket) => {
   });
 });
 
-connectKafka()
+connectKafka(io, emailToSocketIdMap)
   .then(() => {
-    console.log("Kafka producer and consumer connected");
+    console.log("Kafka connected");
     app.listen(port, () => {
-      console.log(`Server is running on port ${port}`);
+      console.log(`Server running on port ${port}`);
     });
   })
   .catch((err) => {
-    console.error("Error connecting to Kafka:", err);
+    console.error("Kafka connection error:", err);
   });
