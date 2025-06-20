@@ -8,6 +8,7 @@ const appointRouter = require("./routes/appointRoutes");
 const path = require("path");
 const notificationRouter = require("./routes/notificationRouter");
 const { Server } = require("socket.io");
+const { connectKafka } = require("./services/kafkaClient");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -61,5 +62,13 @@ io.on("connection", (socket) => {
   });
 });
 
-
-app.listen(port, () => {});
+connectKafka()
+  .then(() => {
+    console.log("Kafka producer and consumer connected");
+    app.listen(port, () => {
+      console.log(`Server is running on port ${port}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Error connecting to Kafka:", err);
+  });
