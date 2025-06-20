@@ -7,60 +7,78 @@ import Navbar from "../components/Navbar";
 import fetchData from "../helper/apiCall";
 import { setLoading } from "../redux/reducers/rootSlice";
 import Loading from "../components/Loading";
+import { useSocket } from "../SocketContext";
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const dispatch = useDispatch();
   const { loading } = useSelector((state) => state.root);
+  const socket = useSocket();
 
-  const getAllNotif = async (e) => {
+  const getAllNotif = async () => {
     try {
       dispatch(setLoading(true));
       const temp = await fetchData(`/notification/getallnotifs`);
       dispatch(setLoading(false));
       setNotifications(temp);
-    } catch (error) {}
+    } catch (error) {
+      dispatch(setLoading(false));
+    }
   };
 
   useEffect(() => {
     getAllNotif();
   }, []);
 
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewNotification = (notification) => {
+      setNotifications((prev) => [notification, ...prev]);
+    };
+
+    socket.on("new-notification", handleNewNotification);
+
+    return () => {
+      socket.off("new-notification", handleNewNotification);
+    };
+  }, [socket]);
+
   return (
     <>
       <Navbar />
-        <section className="container notif-section">
-          <h2 className="page-heading">Your Notifications</h2>
+      <section className="container notif-section">
+        <h2 className="page-heading">Your Notifications</h2>
 
-          {notifications.length > 0 ? (
-            <div className="notifications">
-              <table>
-                <thead>
-                  <tr>
-                    <th>S.No</th>
-                    <th>Content</th>
-                    <th>Date</th>
-                    <th>Time</th>
+        {loading ? (
+          <Loading />
+        ) : notifications.length > 0 ? (
+          <div className="notifications">
+            <table>
+              <thead>
+                <tr>
+                  <th>S.No</th>
+                  <th>Content</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {notifications?.map((ele, i) => (
+                  <tr key={ele._id}>
+                    <td>{i + 1}</td>
+                    <td>{ele.content}</td>
+                    <td>{ele.updatedAt.split("T")[0]}</td>
+                    <td>{ele.updatedAt.split("T")[1].split(".")[0]}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {notifications?.map((ele, i) => {
-                    return (
-                      <tr key={ele._id}>
-                        <td>{i + 1}</td>
-                        <td>{ele.content}</td>
-                        <td>{ele.updatedAt.split("T")[0]}</td>
-                        <td>{ele.updatedAt.split("T")[1].split(".")[0]}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <Empty />
-          )}
-        </section>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <Empty />
+        )}
+      </section>
       <Footer />
     </>
   );
